@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Display TKD</title>
+
+<style>
+body{
+  margin:0;
+  background:black;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+.container{
+  display:flex;
+  height:80vh;
+}
+
+.box{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+
+.red{background:red;}
+.blue{background:blue;}
+
+.score{
+  font-size:120px;
+  font-weight:bold;
+}
+
+.gj{
+  font-size:30px;
+}
+
+#timer{
+  font-size:70px;
+  margin:10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1 id="round">ROUND 1</h1>
+<div id="timer">2:00</div>
+
+<div class="container">
+  <div class="box red">
+    <div class="score" id="redScore">0</div>
+    <div class="gj" id="redGj"></div>
+  </div>
+
+  <div class="box blue">
+    <div class="score" id="blueScore">0</div>
+    <div class="gj" id="blueGj"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, update }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDg3vwSaRq65XTAlxKLiqNc13cE0mT5Rmo",
+  authDomain: "taekwondo-score-f908b.firebaseapp.com",
+  databaseURL: "https://taekwondo-score-f908b-default-rtdb.firebaseio.com",
+  projectId: "taekwondo-score-f908b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let time = 120;
+let running = false;
+
+// realtime data
+onValue(ref(db,'match'),(snap)=>{
+  let d = snap.val();
+  if(!d) return;
+
+  document.getElementById('redScore').innerText = d.redScore;
+  document.getElementById('blueScore').innerText = d.blueScore;
+
+  document.getElementById('redGj').innerHTML = "● ".repeat(d.redGamjeom||0);
+  document.getElementById('blueGj').innerHTML = "● ".repeat(d.blueGamjeom||0);
+
+  running = d.running;
+  time = d.time;
+
+  document.getElementById('round').innerText = "ROUND " + (d.round || 1);
+});
+
+// timer chạy
+setInterval(()=>{
+  if(!running) return;
+
+  if(time>0) time--;
+
+  let m = Math.floor(time/60);
+  let s = time%60;
+
+  document.getElementById('timer').innerText =
+    m + ":" + (s<10?"0":"") + s;
+
+  update(ref(db,'match'),{time});
+},1000);
+</script>
+
+</body>
+</html>
