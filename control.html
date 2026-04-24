@@ -1,97 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Control TKD</title>
-</head>
-
-<body style="font-family:Arial;text-align:center">
-
-<h2>CONTROL PANEL</h2>
-
-<h3>🔴 ĐỎ</h3>
-<button onclick="add('red',1)">+1</button>
-<button onclick="add('red',2)">+2</button>
-<button onclick="add('red',3)">+3</button>
-<button onclick="add('red',-1)">-1</button>
-<br><br>
-<button onclick="gamjeom('red')">⚠ Gam-jeom</button>
-
-<hr>
-
-<h3>🔵 XANH</h3>
-<button onclick="add('blue',1)">+1</button>
-<button onclick="add('blue',2)">+2</button>
-<button onclick="add('blue',3)">+3</button>
-<button onclick="add('blue',-1)">-1</button>
-<br><br>
-<button onclick="gamjeom('blue')">⚠ Gam-jeom</button>
-
-<br><br>
-<button onclick="start()">START</button>
-<button onclick="reset()">RESET</button>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set, update }
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDg3vwSaRq65XTAlxKLiqNc13cE0mT5Rmo",
   authDomain: "taekwondo-score-f908b.firebaseapp.com",
   databaseURL: "https://taekwondo-score-f908b-default-rtdb.firebaseio.com",
-  projectId: "taekwondo-score-f908b"
+  projectId: "taekwondo-score-f908b",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// cộng điểm / trừ điểm
-async function add(team, point){
-  const r = ref(db,'match/'+team+'Score');
-  const snap = await get(r);
-  let val = snap.val() || 0;
-
-  val += point;
-  if(val < 0) val = 0;
-
-  set(r,val);
-}
-
-// gamjeom (●) + cộng 1 điểm đối thủ
-async function gamjeom(team){
-  const g = ref(db,'match/'+team+'Gamjeom');
-  const snap = await get(g);
-  let val = snap.val() || 0;
-
-  if(val < 5){
-    set(g,val+1);
-
-    let opp = team==='red'?'blue':'red';
-    const s = ref(db,'match/'+opp+'Score');
-    const snap2 = await get(s);
-    set(s,(snap2.val()||0)+1);
-  }
-}
-
-// start trận
-function start(){
-  update(ref(db,'match'),{running:true});
-}
-
-// reset toàn bộ
-function reset(){
-  set(ref(db,'match'),{
-    redScore:0,
-    blueScore:0,
-    redGamjeom:0,
-    blueGamjeom:0,
-    time:120,
-    running:false,
-    round:1
+window.addScore = function(team, value) {
+  set(ref(db, "score"), {
+    team: team,
+    value: value
   });
-}
+};
 </script>
 
-</body>
-</html>
+<h2>CONTROL</h2>
+
+<button onclick="addScore('red',1)">RED +1</button>
+<button onclick="addScore('blue',1)">BLUE +1</button>
