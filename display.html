@@ -1,22 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Display TKD</title>
+
+<style>
+body{
+  margin:0;
+  background:black;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+.container{
+  display:flex;
+  height:80vh;
+}
+
+.box{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+
+.red{background:red;}
+.blue{background:blue;}
+
+.score{
+  font-size:120px;
+  font-weight:bold;
+}
+
+.gj{
+  font-size:30px;
+}
+
+#timer{
+  font-size:70px;
+  margin:10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1 id="round">ROUND 1</h1>
+<div id="timer">2:00</div>
+
+<div class="container">
+  <div class="box red">
+    <div class="score" id="redScore">0</div>
+    <div class="gj" id="redGj"></div>
+  </div>
+
+  <div class="box blue">
+    <div class="score" id="blueScore">0</div>
+    <div class="gj" id="blueGj"></div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, update }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDg3vwSaRq65XTAlxKLiqNc13cE0mT5Rmo",
+  authDomain: "taekwondo-score-f908b.firebaseapp.com",
   databaseURL: "https://taekwondo-score-f908b-default-rtdb.firebaseio.com",
   projectId: "taekwondo-score-f908b",
+  appId: "1:395923611117:web:ab9c6d992a1c0951025be4"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-onValue(ref(db, "score"), (snap) => {
-  const data = snap.val();
-  document.getElementById("out").innerText =
-    JSON.stringify(data);
+let time = 120;
+let running = false;
+
+// ================= REALTIME =================
+onValue(ref(db,'match'),(snap)=>{
+  let d = snap.val();
+  if(!d) return;
+
+  document.getElementById('redScore').innerText = d.redScore ?? 0;
+  document.getElementById('blueScore').innerText = d.blueScore ?? 0;
+
+  document.getElementById('redGj').innerHTML =
+    "● ".repeat(d.redGamjeom ?? 0);
+
+  document.getElementById('blueGj').innerHTML =
+    "● ".repeat(d.blueGamjeom ?? 0);
+
+  running = d.running ?? false;
+  time = d.time ?? 120;
+
+  document.getElementById('round').innerText =
+    "ROUND " + (d.round ?? 1);
+
+  updateTimerUI();
 });
+
+// ================= TIMER =================
+function updateTimerUI(){
+  let m = Math.floor(time / 60);
+  let s = time % 60;
+
+  document.getElementById('timer').innerText =
+    m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+// chạy timer
+setInterval(()=>{
+  if(!running) return;
+  if(time <= 0) return;
+
+  time--;
+
+  updateTimerUI();
+
+  update(ref(db,'match'),{
+    time: time
+  });
+
+},1000);
+
 </script>
 
-<h1>DISPLAY</h1>
-<div id="out">waiting...</div>
+</body>
+</html>
