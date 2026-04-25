@@ -8,28 +8,12 @@
 body{
   font-family:Arial;
   margin:0;
-  overflow:hidden;
 }
 
-/* XOAY NGANG CHUẨN */
-@media screen and (orientation:portrait){
-  body{
-    transform: rotate(90deg);
-    transform-origin: top left;
-
-    width:100vh;
-    height:100vw;
-
-    position:absolute;
-    top:0;
-    left:0;
-  }
-}
-
-/* LAYOUT */
+/* LAYOUT DỌC */
 .main{
   display:flex;
-  width:100vw;
+  flex-direction:column;
   height:100vh;
 }
 
@@ -40,33 +24,25 @@ body{
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  padding:10px;
 }
 
 .red{ background:#ffe5e5; }
 .blue{ background:#e5f0ff; }
 
+/* CENTER */
+.center{
+  padding:10px;
+  background:#ddd;
+  text-align:center;
+}
+
 /* BUTTON */
 button{
   margin:6px;
   padding:14px 20px;
-  font-size:20px;
+  font-size:18px;
   border:none;
   border-radius:10px;
-}
-
-/* CENTER */
-.center{
-  width:30%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:#ddd;
-}
-
-h3{
-  margin:10px 0;
 }
 </style>
 
@@ -87,7 +63,7 @@ h3{
     <button onclick="gamjeom('red')">⚠ Gam-jeom</button>
   </div>
 
-  <!-- CENTER -->
+  <!-- CONTROL -->
   <div class="center">
 
     <h3>⏱ TIME</h3>
@@ -117,11 +93,11 @@ h3{
 
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set, update }
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDg3vwSaRq65XTAlxKLiqNc13cE0mT5Rmo",
   authDomain: "taekwondo-score-f908b.firebaseapp.com",
@@ -130,64 +106,68 @@ const firebaseConfig = {
   appId: "1:395923611117:web:ab9c6d992a1c0951025be4"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-const matchRef = ref(db, "match");
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 let timer = null;
 
 /* SCORE */
-window.add = async function(team, point){
-  const r = ref(db, "match/" + team + "Score");
-  const snap = await get(r);
-  let val = snap.val() || 0;
+function add(team, point){
+  const r = db.ref("match/" + team + "Score");
 
-  val += point;
-  if(val < 0) val = 0;
-
-  set(r, val);
+  r.once("value").then(snap=>{
+    let val = snap.val() || 0;
+    val += point;
+    if(val < 0) val = 0;
+    r.set(val);
+  });
 }
 
 /* GAMJEOM */
-window.gamjeom = async function(team){
-  const g = ref(db, "match/" + team + "Gamjeom");
-  const snap = await get(g);
-  let val = snap.val() || 0;
+function gamjeom(team){
+  const g = db.ref("match/" + team + "Gamjeom");
 
-  if(val < 20){
-    set(g, val + 1);
+  g.once("value").then(snap=>{
+    let val = snap.val() || 0;
 
-    let opp = team === "red" ? "blue" : "red";
-    const s = ref(db, "match/" + opp + "Score");
-    const snap2 = await get(s);
-    set(s, (snap2.val() || 0) + 1);
-  }
+    if(val < 20){
+      g.set(val + 1);
+
+      let opp = team === "red" ? "blue" : "red";
+      const s = db.ref("match/" + opp + "Score");
+
+      s.once("value").then(snap2=>{
+        s.set((snap2.val() || 0) + 1);
+      });
+    }
+  });
 }
 
 /* TIMER */
-window.startTimer = function(){
-  update(matchRef, { running: true });
+function startTimer(){
+  db.ref("match").update({ running: true });
 
   if(timer) return;
 
-  timer = setInterval(async () => {
-    const tRef = ref(db, "match/time");
-    const snap = await get(tRef);
-    let time = snap.val() || 0;
+  timer = setInterval(()=>{
+    const tRef = db.ref("match/time");
 
-    if(time > 0){
-      set(tRef, time - 1);
-    } else {
-      clearInterval(timer);
-      timer = null;
-      update(matchRef, { running: false });
-    }
-  }, 1000);
+    tRef.once("value").then(snap=>{
+      let time = snap.val() || 0;
+
+      if(time > 0){
+        tRef.set(time - 1);
+      } else {
+        clearInterval(timer);
+        timer = null;
+        db.ref("match").update({ running: false });
+      }
+    });
+  },1000);
 }
 
-window.pauseTimer = function(){
-  update(matchRef, { running: false });
+function pauseTimer(){
+  db.ref("match").update({ running: false });
 
   if(timer){
     clearInterval(timer);
@@ -196,8 +176,8 @@ window.pauseTimer = function(){
 }
 
 /* ROUND */
-window.setRound = function(r){
-  update(matchRef, {
+function setRound(r){
+  db.ref("match").update({
     round: r,
     time: 120,
     running: false
@@ -210,13 +190,13 @@ window.setRound = function(r){
 }
 
 /* RESET */
-window.reset = function(){
+function reset(){
   if(timer){
     clearInterval(timer);
     timer = null;
   }
 
-  set(matchRef, {
+  db.ref("match").set({
     redScore: 0,
     blueScore: 0,
     redGamjeom: 0,
