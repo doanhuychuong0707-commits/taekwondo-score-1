@@ -24,6 +24,7 @@ body{
   flex-direction:column;
   justify-content:center;
   align-items:center;
+  position:relative; /* thêm để gắn gamjeom xuống dưới */
 }
 
 .red{background:red;}
@@ -34,13 +35,27 @@ body{
   font-weight:bold;
 }
 
-.gj{
-  font-size:30px;
-}
-
 #timer{
   font-size:70px;
   margin:10px;
+}
+
+/* GAMJEOM OVAL */
+.gjBox{
+  position:absolute;
+  bottom:20px;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  width:80%;
+}
+
+.gjItem{
+  width:25px;
+  height:15px;
+  background:white;
+  border-radius:50px;
+  margin:3px;
 }
 </style>
 
@@ -54,12 +69,12 @@ body{
 <div class="container">
   <div class="box red">
     <div class="score" id="redScore">0</div>
-    <div class="gj" id="redGj"></div>
+    <div class="gjBox" id="redGj"></div>
   </div>
 
   <div class="box blue">
     <div class="score" id="blueScore">0</div>
-    <div class="gj" id="blueGj"></div>
+    <div class="gjBox" id="blueGj"></div>
   </div>
 </div>
 
@@ -90,11 +105,8 @@ onValue(ref(db,'match'),(snap)=>{
   document.getElementById('redScore').innerText = d.redScore ?? 0;
   document.getElementById('blueScore').innerText = d.blueScore ?? 0;
 
-  document.getElementById('redGj').innerHTML =
-    "● ".repeat(d.redGamjeom ?? 0);
-
-  document.getElementById('blueGj').innerHTML =
-    "● ".repeat(d.blueGamjeom ?? 0);
+  renderGamjeom('redGj', d.redGamjeom ?? 0);
+  renderGamjeom('blueGj', d.blueGamjeom ?? 0);
 
   running = d.running ?? false;
   time = d.time ?? 120;
@@ -104,6 +116,15 @@ onValue(ref(db,'match'),(snap)=>{
 
   updateTimerUI();
 });
+
+// ================= GAMJEOM =================
+function renderGamjeom(id, count){
+  let html = "";
+  for(let i=0;i<count;i++){
+    html += '<div class="gjItem"></div>';
+  }
+  document.getElementById(id).innerHTML = html;
+}
 
 // ================= TIMER =================
 function updateTimerUI(){
