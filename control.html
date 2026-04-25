@@ -12,7 +12,7 @@ body{
   margin:0;
 }
 
-/* LAYOUT NGANG THẬT */
+/* LAYOUT NGANG */
 .main{
   display:flex;
   height:100vh;
@@ -49,29 +49,25 @@ button{
   border-radius:10px;
 }
 
-/* ❗ Nếu cầm dọc → hiển thị cảnh báo */
-@media (orientation:portrait){
-  body::before{
-    content:"👉 Hãy xoay ngang điện thoại để dùng";
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
-    background:black;
-    color:white;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:22px;
-    z-index:999;
-  }
+/* THÔNG BÁO XOAY */
+#rotateNotice{
+  position:fixed;
+  inset:0;
+  background:black;
+  color:white;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  font-size:22px;
+  z-index:999;
 }
 </style>
 
 </head>
 
 <body>
+
+<div id="rotateNotice">👉 Vui lòng xoay ngang điện thoại</div>
 
 <div class="main">
 
@@ -114,7 +110,7 @@ button{
 
 </div>
 
-<!-- Firebase compat -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -132,33 +128,47 @@ const db = firebase.database();
 
 let timer = null;
 
+/* ===== FIX XOAY NGANG ===== */
+function checkOrientation(){
+  const notice = document.getElementById("rotateNotice");
+
+  let isPortrait = false;
+
+  if(screen.orientation){
+    isPortrait = screen.orientation.type.includes("portrait");
+  }else{
+    isPortrait = window.innerHeight > window.innerWidth;
+  }
+
+  notice.style.display = isPortrait ? "flex" : "none";
+}
+
+window.addEventListener("orientationchange", checkOrientation);
+window.addEventListener("resize", checkOrientation);
+checkOrientation();
+
 /* SCORE */
 function add(team, point){
-  const r = db.ref("match/" + team + "Score");
-  r.once("value").then(s=>{
+  db.ref("match/" + team + "Score").once("value").then(s=>{
     let v = s.val() || 0;
     v += point;
     if(v < 0) v = 0;
-    r.set(v);
+    db.ref("match/" + team + "Score").set(v);
   });
 }
 
 /* GAMJEOM */
 function gamjeom(team){
-  const g = db.ref("match/" + team + "Gamjeom");
-  g.once("value").then(s=>{
+  db.ref("match/" + team + "Gamjeom").once("value").then(s=>{
     let v = s.val() || 0;
 
     if(v < 20){
-      g.set(v + 1);
+      db.ref("match/" + team + "Gamjeom").set(v+1);
 
       let opp = team === "red" ? "blue" : "red";
-      db.ref("match/" + opp + "Score")
-        .once("value")
-        .then(s2=>{
-          db.ref("match/" + opp + "Score")
-            .set((s2.val() || 0) + 1);
-        });
+      db.ref("match/" + opp + "Score").once("value").then(s2=>{
+        db.ref("match/" + opp + "Score").set((s2.val()||0)+1);
+      });
     }
   });
 }
@@ -171,14 +181,15 @@ function startTimer(){
 
   timer = setInterval(()=>{
     const tRef = db.ref("match/time");
+
     tRef.once("value").then(s=>{
       let t = s.val() || 0;
 
-      if(t > 0){
-        tRef.set(t - 1);
+      if(t>0){
+        tRef.set(t-1);
       }else{
         clearInterval(timer);
-        timer = null;
+        timer=null;
         db.ref("match").update({ running:false });
       }
     });
@@ -190,7 +201,7 @@ function pauseTimer(){
 
   if(timer){
     clearInterval(timer);
-    timer = null;
+    timer=null;
   }
 }
 
@@ -204,7 +215,7 @@ function setRound(r){
 
   if(timer){
     clearInterval(timer);
-    timer = null;
+    timer=null;
   }
 }
 
@@ -212,7 +223,7 @@ function setRound(r){
 function reset(){
   if(timer){
     clearInterval(timer);
-    timer = null;
+    timer=null;
   }
 
   db.ref("match").set({
