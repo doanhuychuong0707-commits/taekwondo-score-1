@@ -6,48 +6,61 @@
 
 <style>
 body{
-  font-family: Arial;
+  font-family:Arial;
   margin:0;
-  display:flex;
-  flex-direction:column;
-  height:100vh;
+  overflow:hidden;
 }
 
-/* Ép xoay ngang */
+/* ÉP XOAY NGANG */
 @media screen and (orientation:portrait){
   body{
     transform: rotate(90deg);
     transform-origin: center;
     width:100vh;
     height:100vw;
-    overflow:hidden;
   }
 }
 
-.container{
+/* LAYOUT */
+.main{
   display:flex;
-  flex:1;
+  height:100vh;
 }
 
+/* TEAM */
 .team{
   flex:1;
-  text-align:center;
-  padding:20px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:10px;
 }
 
 .red{ background:#ffe5e5; }
 .blue{ background:#e5f0ff; }
 
+/* BUTTON */
 button{
   margin:5px;
-  padding:15px 20px;
-  font-size:18px;
+  padding:14px 20px;
+  font-size:20px;
+  border:none;
+  border-radius:8px;
 }
 
-.controls{
-  text-align:center;
-  padding:10px;
+/* CONTROL CENTER */
+.center{
+  width:30%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
   background:#ddd;
+}
+
+h3{
+  margin:10px 0;
 }
 </style>
 
@@ -55,9 +68,7 @@ button{
 
 <body>
 
-<h2 style="text-align:center">CONTROL PANEL</h2>
-
-<div class="container">
+<div class="main">
 
   <!-- RED -->
   <div class="team red">
@@ -66,8 +77,25 @@ button{
     <button onclick="add('red',2)">+2</button>
     <button onclick="add('red',3)">+3</button>
     <button onclick="add('red',-1)">-1</button>
-    <br><br>
+    <br>
     <button onclick="gamjeom('red')">⚠ Gam-jeom</button>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+
+    <h3>⏱ TIME</h3>
+    <button onclick="startTimer()">▶️ START</button>
+    <button onclick="pauseTimer()">⏸ PAUSE</button>
+
+    <h3>🔁 ROUND</h3>
+    <button onclick="setRound(1)">R1</button>
+    <button onclick="setRound(2)">R2</button>
+    <button onclick="setRound(3)">R3</button>
+
+    <br>
+    <button onclick="reset()">🔄 RESET</button>
+
   </div>
 
   <!-- BLUE -->
@@ -77,18 +105,10 @@ button{
     <button onclick="add('blue',2)">+2</button>
     <button onclick="add('blue',3)">+3</button>
     <button onclick="add('blue',-1)">-1</button>
-    <br><br>
+    <br>
     <button onclick="gamjeom('blue')">⚠ Gam-jeom</button>
   </div>
 
-</div>
-
-<!-- CONTROL -->
-<div class="controls">
-  <button onclick="startTimer()">▶️ START TIME</button>
-  <button onclick="pauseTimer()">⏸ PAUSE TIME</button>
-  <button onclick="start()">START MATCH</button>
-  <button onclick="reset()">RESET</button>
 </div>
 
 <script type="module">
@@ -111,7 +131,7 @@ const matchRef = ref(db, "match");
 
 let timer = null;
 
-/* ================= SCORE ================= */
+/* SCORE */
 window.add = async function(team, point){
   const r = ref(db, "match/" + team + "Score");
   const snap = await get(r);
@@ -123,13 +143,13 @@ window.add = async function(team, point){
   set(r, val);
 }
 
-/* ================= GAMJEOM ================= */
+/* GAMJEOM */
 window.gamjeom = async function(team){
   const g = ref(db, "match/" + team + "Gamjeom");
   const snap = await get(g);
   let val = snap.val() || 0;
 
-  if(val < 20){   // 🔥 TĂNG LÊN 20
+  if(val < 20){
     set(g, val + 1);
 
     let opp = team === "red" ? "blue" : "red";
@@ -139,12 +159,7 @@ window.gamjeom = async function(team){
   }
 }
 
-/* ================= START MATCH ================= */
-window.start = function(){
-  update(matchRef, { running: true });
-}
-
-/* ================= START TIMER ================= */
+/* TIMER */
 window.startTimer = function(){
   update(matchRef, { running: true });
 
@@ -165,7 +180,6 @@ window.startTimer = function(){
   }, 1000);
 }
 
-/* ================= PAUSE TIMER ================= */
 window.pauseTimer = function(){
   update(matchRef, { running: false });
 
@@ -175,7 +189,21 @@ window.pauseTimer = function(){
   }
 }
 
-/* ================= RESET ================= */
+/* ROUND */
+window.setRound = function(r){
+  update(matchRef, {
+    round: r,
+    time: 120,
+    running: false
+  });
+
+  if(timer){
+    clearInterval(timer);
+    timer = null;
+  }
+}
+
+/* RESET */
 window.reset = function(){
   if(timer){
     clearInterval(timer);
